@@ -1,6 +1,6 @@
 import argparse
 
-from frankenfont.font_creator import create_custom_font, install_font
+from frankenfont.create import create_custom_font, install_font
 
 
 def main():
