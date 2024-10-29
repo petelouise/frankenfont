@@ -15,13 +15,18 @@ def merge_glyphs(base_font, symbol_font, symbols):
     symbol_font_glyphs = TTFont(symbol_font)
     cmap = symbol_font_glyphs["cmap"].getBestCmap()
     glyf = symbol_font_glyphs["glyf"]
+    hmtx = symbol_font_glyphs["hmtx"]
 
     for symbol in symbols:
         code_point = ord(symbol)
         if code_point in cmap:
             glyph_name = cmap[code_point]
             if glyph_name in glyf.keys():
+                # Copy glyph outline
                 base_font["glyf"][glyph_name] = glyf[glyph_name]
+                # Copy horizontal metrics
+                base_font["hmtx"][glyph_name] = hmtx[glyph_name]
+                # Update character mapping
                 base_font["cmap"].tables[0].cmap[code_point] = glyph_name
     symbol_font_glyphs.close()
 
