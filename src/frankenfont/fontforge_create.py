@@ -1,5 +1,6 @@
 #!/usr/bin/fontforge
 import os
+
 import fontforge
 import toml
 
@@ -10,7 +11,7 @@ def load_config(config_path):
 
 def merge_glyphs(base_font, symbol_font_path, symbols):
     symbol_font = fontforge.open(symbol_font_path)
-    
+
     for symbol in symbols:
         try:
             # Get the glyph from symbol font
@@ -22,7 +23,7 @@ def merge_glyphs(base_font, symbol_font_path, symbols):
             base_font[ord(symbol)].reference(symbol_glyph)
         except Exception as e:
             print(f"Warning: Could not copy symbol {symbol}: {e}")
-    
+
     symbol_font.close()
 
 
@@ -48,6 +49,10 @@ def create_custom_font(config_path):
     # Generate the output font
     base_font.generate(output_path)
     base_font.close()
-    
+
     print(f"Custom font saved to {output_path}")
     return output_path
+
+
+CONFIG_PATH = "tests/test_config.toml"
+create_custom_font(CONFIG_PATH)
