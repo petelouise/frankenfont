@@ -15,13 +15,17 @@ def merge_glyphs(base_font, symbol_font_path, symbols):
 
     for symbol in symbols:
         try:
+            code_point = ord(symbol)
             # Get the glyph from symbol font
-            symbol_glyph = symbol_font[ord(symbol)]
+            symbol_glyph = symbol_font[code_point]
             # Create or get the glyph slot in base font
-            if ord(symbol) not in base_font:
-                base_font.createChar(ord(symbol))
-            # Copy the glyph reference
-            base_font[ord(symbol)].reference(symbol_glyph)
+            if code_point not in base_font:
+                base_font.createChar(code_point)
+            # Copy the glyph data
+            target_glyph = base_font[code_point]
+            target_glyph.clear()
+            target_glyph.width = symbol_glyph.width
+            target_glyph.importOutlines(symbol_glyph)
         except Exception as e:
             print(f"Warning: Could not copy symbol {symbol}: {e}")
 
