@@ -1,6 +1,6 @@
 #!/usr/bin/fontforge
-import os
 import json
+import os
 
 import fontforge
 
@@ -55,5 +55,5 @@ def create_custom_font(config_path):
     return output_path
 
 
-CONFIG_PATH = "tests/test_config.toml"
+CONFIG_PATH = "tests/test_config.json"
 create_custom_font(CONFIG_PATH)
