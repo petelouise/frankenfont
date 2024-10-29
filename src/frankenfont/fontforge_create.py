@@ -55,5 +55,5 @@ def create_custom_font(config_path):
     return output_path
 
 
-CONFIG_PATH = "tests/test_config.json"
+CONFIG_PATH = "tests/test_config.toml"
 create_custom_font(CONFIG_PATH)
