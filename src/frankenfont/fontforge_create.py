@@ -1,12 +1,13 @@
 #!/usr/bin/fontforge
 import os
+import json
 
 import fontforge
-import toml
 
 
 def load_config(config_path):
-    return toml.load(config_path)
+    with open(config_path) as f:
+        return json.load(f)
 
 
 def merge_glyphs(base_font, symbol_font_path, symbols):
@@ -54,5 +55,5 @@ def create_custom_font(config_path):
     return output_path
 
 
-CONFIG_PATH = "tests/test_config.toml"
+CONFIG_PATH = "tests/test_config.json"
 create_custom_font(CONFIG_PATH)
