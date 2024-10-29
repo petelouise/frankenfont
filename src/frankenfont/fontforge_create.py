@@ -18,12 +18,12 @@ def merge_glyphs(base_font, symbol_font_path, glyphs):
             # Handle both literal symbols and glyph names
             if len(glyph) == 1:  # Literal symbol
                 code_point = ord(glyph)
-                symbol_font.selection.select(code_point)
+                symbol_font.selection.select(("unicode",), code_point)
             else:  # Glyph name
                 if glyph not in symbol_font:
                     print(f"Warning: Glyph '{glyph}' not found in font")
                     continue
-                symbol_font.selection.select(glyph)
+                symbol_font.selection.select(("singletons",), glyph)
                 code_point = symbol_font[glyph].unicode
                 if code_point is None:
                     print(f"Warning: No unicode mapping for glyph '{glyph}'")
@@ -36,7 +36,7 @@ def merge_glyphs(base_font, symbol_font_path, glyphs):
                 base_font.createChar(code_point)
             
             # Select and paste into target font
-            base_font.selection.select(code_point)
+            base_font.selection.select(("unicode",), code_point)
             base_font.paste()
         except Exception as e:
             print(f"Warning: Could not copy glyph '{glyph}': {e}")
