@@ -10,14 +10,25 @@ def load_config(config_path):
         return json.load(f)
 
 
-def merge_glyphs(base_font, symbol_font_path, symbols):
+def merge_glyphs(base_font, symbol_font_path, glyphs):
     symbol_font = fontforge.open(symbol_font_path)
 
-    for symbol in symbols:
+    for glyph in glyphs:
         try:
-            code_point = ord(symbol)
-            # Select the glyph in source font
-            symbol_font.selection.select(code_point)
+            # Handle both literal symbols and glyph names
+            if len(glyph) == 1:  # Literal symbol
+                code_point = ord(glyph)
+                symbol_font.selection.select(code_point)
+            else:  # Glyph name
+                if glyph not in symbol_font:
+                    print(f"Warning: Glyph '{glyph}' not found in font")
+                    continue
+                symbol_font.selection.select(glyph)
+                code_point = symbol_font[glyph].unicode
+                if code_point is None:
+                    print(f"Warning: No unicode mapping for glyph '{glyph}'")
+                    continue
+            
             symbol_font.copy()
             
             # Create glyph slot if needed
@@ -28,7 +39,7 @@ def merge_glyphs(base_font, symbol_font_path, symbols):
             base_font.selection.select(code_point)
             base_font.paste()
         except Exception as e:
-            print(f"Warning: Could not copy symbol {symbol}: {e}")
+            print(f"Warning: Could not copy glyph '{glyph}': {e}")
 
     symbol_font.close()
 
@@ -48,9 +59,9 @@ def create_custom_font(config_path):
 
     # Process each replacement set
     for replacement in config["replacements"]:
-        symbols = replacement["symbols"]
+        glyphs = replacement["glyphs"]
         font_path = replacement["font"]
-        merge_glyphs(base_font, font_path, symbols)
+        merge_glyphs(base_font, font_path, glyphs)
 
     # Generate the output font
     base_font.generate(output_path)

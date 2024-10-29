@@ -7,11 +7,11 @@
     "replacements": [
         {
             "font": "tests/fonts/Apple Symbols.ttf",
-            "symbols": ["!", "™"]
+            "glyphs": ["!", "trademark"]
         },
         {
             "font": "tests/fonts/SymbolsNerdFont-Regular.ttf",
-            "symbols": ["♠", "♣"]
+            "glyphs": ["spade", "club"]
         }
     ]
 }
