@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fonttools>=4.54.1",
+    "toml>=0.10.2",
+]
 
 [project.scripts]
 hello = "frankenfont:hello"
@@ -12,3 +15,8 @@ hello = "frankenfont:hello"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.3",
+]
