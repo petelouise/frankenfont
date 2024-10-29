@@ -1,8 +1,8 @@
 import os
 
 import pytest
-import toml
 from fontTools.ttLib import TTFont
+
 from frankenfont.create import create_custom_font, load_config
 
 CONFIG_PATH = "tests/test_config.toml"
@@ -27,7 +27,7 @@ def setup_test_environment():
 
 # Core Function Tests
 def test_config_loading():
-    assert config["fonts"]["base"] == "fonts/base_font.ttf"
+    assert config["fonts"]["base"] == "tests/fonts/Brush Script.ttf"
     assert config["fonts"]["output_name"] == "test_custom_font.ttf"
     assert len(config["replacements"]) > 0
     assert config["replacements"][0]["symbols"] == ["!", "™"]
