@@ -1,58 +1,95 @@
+import json
 import random
 import string
-from typing import List, Dict
+import toml
+from typing import List, Dict, Tuple
 
 import fontforge
-import rich
 from rich.console import Console
 from rich.text import Text
 
-def get_sample_text(replacements: List[Dict]) -> str:
-    """Generate sample text including replacement glyphs and random characters"""
-    # Get all replacement symbols
-    symbols = []
-    for replacement in replacements:
-        symbols.extend(replacement["glyphs"])
-    
-    # Add some random ASCII letters and punctuation
-    sample = list(random.sample(string.ascii_letters + string.punctuation, 20))
-    
-    # Insert replacement symbols at random positions
-    for symbol in symbols:
-        pos = random.randint(0, len(sample))
-        sample.insert(pos, symbol)
-    
-    return ' '.join([''.join(sample[i:i+5]) for i in range(0, len(sample), 5)])
+def load_config(config_path: str) -> Dict:
+    """Load and parse the config file"""
+    if config_path.endswith('.toml'):
+        return toml.load(config_path)
+    elif config_path.endswith('.json'):
+        with open(config_path) as f:
+            return json.load(f)
+    raise ValueError("Config file must be .toml or .json")
+
+def build_glyph_map(config: Dict) -> Dict[str, Tuple[str, str]]:
+    """Build mapping of glyphs to their source fonts and names"""
+    glyph_map = {}
+    for replacement in config["replacements"]:
+        font_path = replacement["font"]
+        font = fontforge.open(font_path)
+        font_name = font.fontname
+        for glyph in replacement["glyphs"]:
+            glyph_map[glyph] = (font_path, font_name)
+        font.close()
+    return glyph_map
+
+def get_sample_text() -> str:
+    """Generate sample text with a good mix of characters"""
+    # Include uppercase, lowercase, numbers, and basic punctuation
+    chars = (
+        string.ascii_uppercase[:6] +  # Some uppercase
+        string.ascii_lowercase[:6] +  # Some lowercase
+        string.digits[:4] +          # Some numbers
+        ",.!?-"                      # Basic punctuation
+    )
+    return ' '.join([''.join(random.sample(chars, 5)) for _ in range(4)])
 
 def preview_config(config_path: str) -> None:
     """Display a preview of the font configuration"""
     console = Console()
+    config = load_config(config_path)
     
-    # Load fonts
+    # Load base font info
     base_font = fontforge.open(config["fonts"]["base"])
     base_name = base_font.fontname
     base_font.close()
     
-    # Create preview text
+    # Build glyph mapping
+    glyph_map = build_glyph_map(config)
+    
+    # Create header
     preview = Text()
     preview.append("\n🔤 Font Preview\n\n", style="bold magenta")
     preview.append(f"Base Font: {base_name}\n\n", style="blue")
     
-    # Show replacements
+    # Show replacements grouped by source font
     preview.append("Replacement Glyphs:\n", style="bold green")
+    current_font = None
     for replacement in config["replacements"]:
-        font_path = replacement["font"]
-        font = fontforge.open(font_path)
-        preview.append(f"\nFrom {font.fontname}:\n", style="cyan")
-        preview.append(' '.join(replacement["glyphs"]) + "\n", style="yellow")
+        font = fontforge.open(replacement["font"])
+        if font.fontname != current_font:
+            preview.append(f"\nFrom {font.fontname}:\n", style="cyan")
+            current_font = font.fontname
+        preview.append(' '.join(replacement["glyphs"]) + "\n", style=f"yellow")
         font.close()
     
-    # Show sample text
+    # Generate and show sample text
     preview.append("\nSample Text:\n", style="bold red")
-    sample = get_sample_text(config["replacements"])
-    preview.append(sample + "\n", style="italic")
     
-    # Print the preview
+    # Create sample with base text and replacements
+    sample_base = get_sample_text()
+    sample = Text()
+    
+    # Add some replacement glyphs at regular intervals
+    replacement_glyphs = list(glyph_map.keys())
+    for i, char in enumerate(sample_base):
+        if i > 0 and i % 7 == 0 and replacement_glyphs:  # Every 7th position
+            glyph = replacement_glyphs.pop(0)
+            _, font_name = glyph_map[glyph]
+            sample.append(glyph, style=f"bold yellow")
+        else:
+            sample.append(char, style="blue")
+    
+    preview.append(sample)
+    preview.append("\n")
+    
+    # Print the complete preview
     console.print(preview)
 
 if __name__ == "__main__":
