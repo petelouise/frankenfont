@@ -101,12 +101,16 @@ def preview_config(config_path: str) -> None:
         draw.text((x, y), character, font=font, fill=color)
 
         try:
-            # Use getlength to obtain the width of the glyph
-            glyph_width = font.getlength(character)
-        except AttributeError:
-            # Fallback using getbbox if getlength is unavailable
+            # Use getbbox to obtain the width of the glyph
             bbox = font.getbbox(character)
             glyph_width = bbox[2] - bbox[0] if bbox else 0
+        except AttributeError:
+            # Fallback using getlength if getbbox is unavailable
+            try:
+                glyph_width = font.getlength(character)
+            except AttributeError:
+                logging.error(f"Unable to determine width for glyph '{character}'.")
+                glyph_width = 40  # Default fallback width
 
         x += glyph_width + spacing
 
@@ -133,9 +137,15 @@ def preview_config(config_path: str) -> None:
     temp_draw = ImageDraw.Draw(image)
     for font_name in font_names_list:
         font_color = font_colors[font_name]
-        width, _ = temp_draw.textsize(font_name, font=small_font)
-        total_width += width + temp_draw.textsize(" | ", font=small_font)[0]
-    total_width -= temp_draw.textsize(" | ", font=small_font)[0]  # Remove last separator
+        bbox = small_font.getbbox(font_name)
+        width = bbox[2] - bbox[0] if bbox else 0
+        separator_bbox = small_font.getbbox(" | ")
+        separator_width = separator_bbox[2] - separator_bbox[0] if separator_bbox else 0
+        total_width += width + separator_width
+    if font_names_list:
+        last_separator_bbox = small_font.getbbox(" | ")
+        last_separator_width = last_separator_bbox[2] - last_separator_bbox[0] if last_separator_bbox else 0
+        total_width -= last_separator_width  # Remove last separator
 
     x_font_names = image_width - margin - total_width
 
@@ -146,7 +156,16 @@ def preview_config(config_path: str) -> None:
         else:
             text = f"{font_name}"
         draw.text((x_font_names, y_font_names), text, font=small_font, fill=font_color)
-        glyph_width, _ = draw.textsize(text, font=small_font)
+        try:
+            bbox = small_font.getbbox(text)
+            glyph_width = bbox[2] - bbox[0] if bbox else 0
+        except AttributeError:
+            # Fallback using getlength if getbbox is unavailable
+            try:
+                glyph_width = small_font.getlength(text)
+            except AttributeError:
+                logging.error(f"Unable to determine width for text '{text}'.")
+                glyph_width = 100  # Default fallback width
         x_font_names += glyph_width
 
     # Save image to a temporary file and display
