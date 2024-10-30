@@ -100,8 +100,11 @@ def preview_config(config_path: str) -> None:
                 missing = f"[Error: {glyph}]"
                 valid_glyphs.append(missing)
                 logging.error(f"Error checking glyph '{glyph}' in {font_name}: {e}")
-        glyphs_text = " ".join(valid_glyphs)
-        draw.text((x, y), glyphs_text, font=font, fill="black")
+        # Draw each glyph with manual spacing
+        current_x = x
+        for glyph in valid_glyphs:
+            draw.text((current_x, y), glyph, font=font, fill="black")
+            current_x += font.getsize(glyph)[0] + 10  # Add 10px spacing between glyphs
         y += line_height * 2
 
         # Check if y exceeds image height and adjust if necessary
