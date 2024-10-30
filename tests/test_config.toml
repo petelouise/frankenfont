@@ -1,5 +1,5 @@
 [fonts]
-base = "tests/fonts/Brush Script.ttf"
+base = "tests/fonts/DaddyTimeMonoNerdFontMono-Regular.ttf"
 output_directory = "tests/fonts/output"
 output_name = "test_custom_font.ttf"
 
@@ -8,5 +8,9 @@ glyphs = ["!", "™"]
 font = "tests/fonts/Apple Symbols.ttf"
 
 [[replacements]]
-glyphs = ["", "⏾"]
+glyphs = ["⏻", "⏾"]
 font = "tests/fonts/SymbolsNerdFont-Regular.ttf"
+
+[[replacements]]
+glyphs = ["A", "E", "I", "O", "U", "Y", "a", "e", "i", "o", "u", "y"]
+font = "tests/fonts/Brush Script.ttf"
