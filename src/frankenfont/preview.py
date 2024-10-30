@@ -104,7 +104,14 @@ def preview_config(config_path: str) -> None:
         current_x = x
         for glyph in valid_glyphs:
             draw.text((current_x, y), glyph, font=font, fill="black")
-            current_x += font.getsize(glyph)[0] + 10  # Add 10px spacing between glyphs
+            try:
+                # Use getlength to obtain the width of the glyph
+                glyph_width = font.getlength(glyph)
+            except AttributeError:
+                # Fallback using getbbox if getlength is unavailable
+                bbox = font.getbbox(glyph)
+                glyph_width = bbox[2] - bbox[0] if bbox else 0
+            current_x += glyph_width + 10  # Add 10px spacing between glyphs
         y += line_height * 2
 
         # Check if y exceeds image height and adjust if necessary
