@@ -8,5 +8,5 @@ glyphs = ["!", "™"]
 font = "tests/fonts/Apple Symbols.ttf"
 
 [[replacements]]
-glyphs = ["♠", "♣"]
+glyphs = ["", "⏾"]
 font = "tests/fonts/SymbolsNerdFont-Regular.ttf"
