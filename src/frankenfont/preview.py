@@ -77,7 +77,8 @@ def preview_config(config_path: str) -> None:
         y += line_height
         valid_glyphs = []
         for glyph in glyphs:
-            if font.getsize(glyph)[0] > 0:
+            bbox = font.getbbox(glyph)
+            if bbox is not None:
                 valid_glyphs.append(glyph)
             else:
                 valid_glyphs.append(f"[Missing: {glyph}]")
