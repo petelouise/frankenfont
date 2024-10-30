@@ -66,6 +66,10 @@ def preview_config(config_path: str) -> None:
     font_colors = {}
     glyph_to_font_color = {}
 
+    # Add base font to colors
+    base_font_name = get_font_name(base_font_path)
+    font_colors[base_font_name] = default_color
+
     for i, (font, glyphs, font_path) in enumerate(replacement_fonts):
         assigned_color = color_palette[i % len(color_palette)]
         font_name = get_font_name(font_path)
@@ -89,9 +93,11 @@ def preview_config(config_path: str) -> None:
 
     # Define sample text
     sample_text = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,!.-?"
+    replacement_glyphs = ''.join(replacement["glyphs"] for replacement in replacements)
+    all_glyphs = sample_text + replacement_glyphs
 
     # Draw base font sample with mixed glyphs
-    for character in sample_text:
+    for character in all_glyphs:
         if character in glyph_to_font_color:
             font, color = glyph_to_font_color[character]
         else:
