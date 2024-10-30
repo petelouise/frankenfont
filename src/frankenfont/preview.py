@@ -1,16 +1,16 @@
+import contextlib
 import json
+import logging
 import os
 import sys
 import tempfile
-import contextlib
-import logging
 from pathlib import Path
 
 import toml
 from PIL import Image, ImageDraw, ImageFont
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 def load_config(config_path: str) -> dict:
@@ -26,7 +26,6 @@ def load_config(config_path: str) -> dict:
 def get_font_name(font_path: str) -> str:
     """Extract font name from path"""
     return Path(font_path).stem.replace(".", " ")
-
 
 
 def preview_config(config_path: str) -> None:
@@ -51,7 +50,9 @@ def preview_config(config_path: str) -> None:
         font_path = replacement["font"]
         config_dir = Path(config_path).parent
         font_path = str(config_dir / font_path)
-        logging.info(f"Loading replacement font from {font_path} for glyphs: {replacement['glyphs']}")
+        logging.info(
+            f"Loading replacement font from {font_path} for glyphs: {replacement['glyphs']}"
+        )
         try:
             font = ImageFont.truetype(font_path, size=40)
             replacement_fonts.append((font, replacement["glyphs"], font_path))
@@ -80,7 +81,9 @@ def preview_config(config_path: str) -> None:
     # Draw replacement fonts samples
     for font, glyphs, font_path in replacement_fonts:
         font_name = Path(font_path).name
-        draw.text((x, y), f"Replacement Font: {font_name}", font=base_font, fill="black")
+        draw.text(
+            (x, y), f"Replacement Font: {font_name}", font=base_font, fill="black"
+        )
         y += line_height
         valid_glyphs = []
         for glyph in glyphs:
@@ -111,7 +114,9 @@ def preview_config(config_path: str) -> None:
 
     # Save image to a temporary file and display
     with contextlib.ExitStack() as stack:
-        tmp = stack.enter_context(tempfile.NamedTemporaryFile(suffix=".png", delete=False))
+        tmp = stack.enter_context(
+            tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        )
         image.save(tmp.name)
         logging.info(f"Saved preview image to temporary file: {tmp.name}")
         image.show()
