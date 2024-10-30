@@ -1,14 +1,12 @@
 import json
 import os
-import random
-import string
-import toml
+import sys
+import tempfile
 from pathlib import Path
 from typing import List, Dict
+import toml
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
+from PIL import Image, ImageDraw, ImageFont
 
 def load_config(config_path: str) -> dict:
     """Load and parse the config file"""
@@ -35,63 +33,66 @@ def get_sample_text() -> str:
 
 def preview_config(config_path: str) -> None:
     """Display a preview of the font configuration"""
-    console = Console()
     config = load_config(config_path)
     
-    # Create header
-    preview = Text()
-    preview.append("\n🔤 Font Preview\n\n", style="bold magenta")
+    # Load base font
+    base_font_path = config["fonts"]["base"]
+    try:
+        base_font = ImageFont.truetype(base_font_path, size=40)
+    except IOError:
+        print(f"Error loading base font from {base_font_path}")
+        sys.exit(1)
     
-    # Show base font
-    base_name = get_font_name(config["fonts"]["base"])
-    preview.append("Base Font: ", style="bold blue")
-    preview.append(f"{base_name}\n\n")
+    # Prepare replacements
+    replacements = config.get("replacements", [])
+    replacement_fonts = []
+    for replacement in replacements:
+        font_path = replacement["font"]
+        # If the font path is relative, make it absolute based on config file location
+        config_dir = Path(config_path).parent
+        font_path = str(config_dir / font_path)
+        try:
+            font = ImageFont.truetype(font_path, size=40)
+            replacement_fonts.append((font, replacement["glyphs"]))
+        except IOError:
+            print(f"Error loading replacement font from {font_path}")
+            sys.exit(1)
     
-    # Show replacements grouped by source font
-    preview.append("Replacement Glyphs:\n", style="bold green")
-    for replacement in config["replacements"]:
-        font_name = get_font_name(replacement["font"])
-        preview.append(f"\nFrom {font_name}:\n", style="cyan")
-        
-        # Show glyphs with visual indicators
-        glyphs_text = Text()
-        for glyph in replacement["glyphs"]:
-            if len(glyph) == 1:  # Literal symbol
-                glyphs_text.append(f"{glyph} ", style="yellow")
-            else:  # Named glyph
-                glyphs_text.append(f"[{glyph}] ", style="yellow")
-        preview.append(glyphs_text)
-        preview.append("\n")
+    # Create an image with white background
+    image_width = 800
+    image_height = 600
+    image = Image.new("RGB", (image_width, image_height), color="white")
+    draw = ImageDraw.Draw(image)
     
-    # Generate and show sample text
-    preview.append("\nSample Text Preview:\n", style="bold red")
-    sample_text = get_sample_text()
+    # Starting position
+    x, y = 50, 50
     
-    # Create sample with markers for replacements
-    sample = Text()
-    replacement_glyphs = []
-    for rep in config["replacements"]:
-        replacement_glyphs.extend(rep["glyphs"])
+    # Draw base font sample
+    draw.text((x, y), "Base Font Sample:", font=base_font, fill="black")
+    y += 50
+    sample_text = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,!.-?"
+    draw.text((x, y), sample_text, font=base_font, fill="black")
+    y += 100
     
-    # Insert replacement markers in sample text
-    for i, char in enumerate(sample_text):
-        if i > 0 and i % 7 == 0 and replacement_glyphs:  # Every 7th position
-            glyph = replacement_glyphs.pop(0)
-            marker = glyph if len(glyph) == 1 else f"[{glyph}]"
-            sample.append(marker, style="bold yellow")
-        else:
-            sample.append(char, style="blue")
+    # Draw replacement fonts samples
+    for font, glyphs in replacement_fonts:
+        draw.text((x, y), f"Replacement Font: {font.path}", font=base_font, fill="black")
+        y += 50
+        glyphs_text = " ".join([glyph if len(glyph) == 1 else f"[{glyph}]" for glyph in glyphs])
+        draw.text((x, y), glyphs_text, font=font, fill="black")
+        y += 100
     
-    # Add the sample in a panel
-    preview.append(Panel(sample, title="Sample", border_style="bright_black"))
-    preview.append("\n")
+    # Save image to a temporary file and display
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        image.save(tmp.name)
+        image.show()
+        # Delete the temporary file after displaying
+        os.unlink(tmp.name)
     
-    # Print the complete preview
-    console.print(preview)
+    print("Font preview image has been displayed.")
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1:
         preview_config(sys.argv[1])
     else:
-        print("Please provide a config file path")
+        sys.exit("Error: Please provide a config file path")
