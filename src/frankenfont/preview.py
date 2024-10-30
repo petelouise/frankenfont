@@ -61,6 +61,20 @@ def preview_config(config_path: str) -> None:
             logging.error(f"Error loading replacement font from {font_path}")
             sys.exit(1)
 
+    # Define colors for replacement fonts
+    color_palette = ["red", "green", "blue", "orange", "purple", "cyan"]
+    font_colors = {}
+    glyph_to_font_color = {}
+
+    for i, (font, glyphs, font_path) in enumerate(replacement_fonts):
+        assigned_color = color_palette[i % len(color_palette)]
+        font_name = get_font_name(font_path)
+        font_colors[font_name] = assigned_color
+        for glyph in glyphs:
+            glyph_to_font_color[glyph] = (font, assigned_color)
+
+    default_color = "black"
+
     # Create an image with white background
     image_width = 1200
     image_height = 800
@@ -68,59 +82,72 @@ def preview_config(config_path: str) -> None:
     draw = ImageDraw.Draw(image)
 
     # Initialize starting position
-    x, y = 50, 50
+    x_start, y_start = 50, 50
+    x, y = x_start, y_start
     line_height = 60
+    spacing = 10  # Space between glyphs
 
-    # Draw base font sample
-    draw.text((x, y), "Base Font Sample:", font=base_font, fill="black")
-    y += line_height
+    # Define sample text
     sample_text = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,!.-?"
-    draw.text((x, y), sample_text, font=base_font, fill="black")
-    y += line_height * 2
 
-    # Draw replacement fonts samples
-    for font, glyphs, font_path in replacement_fonts:
-        font_name = Path(font_path).name
-        draw.text(
-            (x, y), f"Replacement Font: {font_name}", font=base_font, fill="black"
-        )
-        y += line_height
-        valid_glyphs = []
-        for glyph in glyphs:
-            try:
-                mask = font.getmask(glyph)
-                if mask.getbbox():
-                    valid_glyphs.append(glyph)
-                    logging.info(f"Glyph '{glyph}' found in {font_name}")
-                else:
-                    missing = f"[Missing: {glyph}]"
-                    valid_glyphs.append(missing)
-                    logging.warning(f"Glyph '{glyph}' MISSING in {font_name}")
-            except Exception as e:
-                missing = f"[Error: {glyph}]"
-                valid_glyphs.append(missing)
-                logging.error(f"Error checking glyph '{glyph}' in {font_name}: {e}")
-        # Draw each glyph with manual spacing
-        current_x = x
-        for glyph in valid_glyphs:
-            draw.text((current_x, y), glyph, font=font, fill="black")
-            try:
-                # Use getlength to obtain the width of the glyph
-                glyph_width = font.getlength(glyph)
-            except AttributeError:
-                # Fallback using getbbox if getlength is unavailable
-                bbox = font.getbbox(glyph)
-                glyph_width = bbox[2] - bbox[0] if bbox else 0
-            current_x += glyph_width + 10  # Add 10px spacing between glyphs
-        y += line_height * 2
+    # Draw base font sample with mixed glyphs
+    for character in sample_text:
+        if character in glyph_to_font_color:
+            font, color = glyph_to_font_color[character]
+        else:
+            font = base_font
+            color = default_color
 
-        # Check if y exceeds image height and adjust if necessary
-        if y + line_height > image_height - 50:
-            image_height += 200
-            new_image = Image.new("RGBA", (image_width, image_height), color="white")
-            new_image.paste(image, (0, 0))
-            image = new_image
-            draw = ImageDraw.Draw(image)
+        draw.text((x, y), character, font=font, fill=color)
+
+        try:
+            # Use getlength to obtain the width of the glyph
+            glyph_width = font.getlength(character)
+        except AttributeError:
+            # Fallback using getbbox if getlength is unavailable
+            bbox = font.getbbox(character)
+            glyph_width = bbox[2] - bbox[0] if bbox else 0
+
+        x += glyph_width + spacing
+
+        # Check for line wrap
+        if x > image_width - x_start:
+            x = x_start
+            y += line_height
+
+    # Draw font names in bottom right corner
+    small_font_size = 20
+    try:
+        small_font = ImageFont.truetype(base_font_path, size=small_font_size)
+    except OSError:
+        logging.error(f"Error loading small font from {base_font_path}")
+        small_font = ImageFont.load_default()
+
+    margin = 50
+    y_font_names = image_height - margin
+
+    # Calculate total width of font names to align them to the right
+    font_names_list = list(font_colors.keys())
+    font_names_text = " | ".join(font_names_list)
+    total_width = 0
+    temp_draw = ImageDraw.Draw(image)
+    for font_name in font_names_list:
+        font_color = font_colors[font_name]
+        width, _ = temp_draw.textsize(font_name, font=small_font)
+        total_width += width + temp_draw.textsize(" | ", font=small_font)[0]
+    total_width -= temp_draw.textsize(" | ", font=small_font)[0]  # Remove last separator
+
+    x_font_names = image_width - margin - total_width
+
+    for i, font_name in enumerate(font_names_list):
+        font_color = font_colors[font_name]
+        if i < len(font_names_list) - 1:
+            text = f"{font_name} | "
+        else:
+            text = f"{font_name}"
+        draw.text((x_font_names, y_font_names), text, font=small_font, fill=font_color)
+        glyph_width, _ = draw.textsize(text, font=small_font)
+        x_font_names += glyph_width
 
     # Save image to a temporary file and display
     with contextlib.ExitStack() as stack:
