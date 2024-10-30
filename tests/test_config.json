@@ -15,3 +15,14 @@
         }
     ]
 }
+{
+    "fonts": {
+        "base": "tests/fonts/base_font.ttf"
+    },
+    "replacements": [
+        {
+            "font": "tests/fonts/replacement_font.ttf",
+            "glyphs": ["A", "B", "C"]
+        }
+    ]
+}

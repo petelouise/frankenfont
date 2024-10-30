@@ -56,3 +56,26 @@ def test_no_extra_symbols(setup_test_environment):
     expected_symbols = {ord(s) for r in config["replacements"] for s in r["symbols"]}
     assert set(cmap.keys()).issuperset(expected_symbols)
     output_font.close()
+import pytest
+from unittest import mock
+from pathlib import Path
+import sys
+
+# Adjust the import path if necessary
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from src.frankenfont.create import create_custom_font
+
+@pytest.fixture
+def mock_install_font():
+    with mock.patch("src.frankenfont.create.install_font") as mocked_install:
+        yield mocked_install
+
+def test_create_custom_font_create_backend(mock_install_font):
+    """Smoke test for create_custom_font in create.py using the default backend."""
+    config_path = Path(__file__).parent / "test_config.json"  # Ensure this config is valid
+    try:
+        create_custom_font(str(config_path))
+    except Exception as e:
+        pytest.fail(f"create_custom_font raised an exception: {e}")
+    mock_install_font.assert_called()
