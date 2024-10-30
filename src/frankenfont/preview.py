@@ -2,13 +2,12 @@ import json
 import random
 import string
 import toml
-from typing import List, Dict, Tuple
 
 import fontforge
 from rich.console import Console
 from rich.text import Text
 
-def load_config(config_path: str) -> Dict:
+def load_config(config_path: str) -> dict:
     """Load and parse the config file"""
     if config_path.endswith('.toml'):
         return toml.load(config_path)
@@ -17,7 +16,7 @@ def load_config(config_path: str) -> Dict:
             return json.load(f)
     raise ValueError("Config file must be .toml or .json")
 
-def build_glyph_map(config: Dict) -> Dict[str, Tuple[str, str]]:
+def build_glyph_map(config: dict) -> dict[str, tuple[str, str]]:
     """Build mapping of glyphs to their source fonts and names"""
     glyph_map = {}
     for replacement in config["replacements"]:
@@ -66,7 +65,7 @@ def preview_config(config_path: str) -> None:
         if font.fontname != current_font:
             preview.append(f"\nFrom {font.fontname}:\n", style="cyan")
             current_font = font.fontname
-        preview.append(' '.join(replacement["glyphs"]) + "\n", style=f"yellow")
+        preview.append(' '.join(replacement["glyphs"]) + "\n", style="yellow")
         font.close()
     
     # Generate and show sample text
@@ -82,7 +81,7 @@ def preview_config(config_path: str) -> None:
         if i > 0 and i % 7 == 0 and replacement_glyphs:  # Every 7th position
             glyph = replacement_glyphs.pop(0)
             _, font_name = glyph_map[glyph]
-            sample.append(glyph, style=f"bold yellow")
+            sample.append(glyph, style="bold yellow")
         else:
             sample.append(char, style="blue")
     
