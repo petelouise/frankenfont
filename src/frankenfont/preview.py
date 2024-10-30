@@ -1,9 +1,9 @@
 import json
 import os
-import random
-import string
 import sys
 import tempfile
+import contextlib
+import logging
 from pathlib import Path
 
 import toml
@@ -24,16 +24,6 @@ def get_font_name(font_path: str) -> str:
     """Extract font name from path"""
     return Path(font_path).stem.replace(".", " ")
 
-
-def get_sample_text() -> str:
-    """Generate sample text with a good mix of characters"""
-    chars = (
-        string.ascii_uppercase[:6]  # Some uppercase
-        + string.ascii_lowercase[:6]  # Some lowercase
-        + string.digits[:4]  # Some numbers
-        + ",.!?-"  # Basic punctuation
-    )
-    return " ".join(["".join(random.sample(chars, 5)) for _ in range(4)])
 
 
 def preview_config(config_path: str) -> None:
@@ -58,44 +48,56 @@ def preview_config(config_path: str) -> None:
         font_path = str(config_dir / font_path)
         try:
             font = ImageFont.truetype(font_path, size=40)
-            replacement_fonts.append((font, replacement["glyphs"]))
+            replacement_fonts.append((font, replacement["glyphs"], font_path))
+            logging.info(f"Loaded replacement font from {font_path}")
         except OSError:
-            print(f"Error loading replacement font from {font_path}")
+            logging.error(f"Error loading replacement font from {font_path}")
             sys.exit(1)
 
     # Create an image with white background
-    image_width = 800
-    image_height = 600
-    image = Image.new("RGB", (image_width, image_height), color="white")
+    image_width = 1200
+    image_height = 800
+    image = Image.new("RGBA", (image_width, image_height), color="white")
     draw = ImageDraw.Draw(image)
 
-    # Starting position
+    # Initialize starting position
     x, y = 50, 50
+    line_height = 60
 
     # Draw base font sample
     draw.text((x, y), "Base Font Sample:", font=base_font, fill="black")
-    y += 50
+    y += line_height
     sample_text = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,!.-?"
     draw.text((x, y), sample_text, font=base_font, fill="black")
-    y += 100
+    y += line_height * 2
 
     # Draw replacement fonts samples
-    for font, glyphs in replacement_fonts:
-        draw.text(
-            (x, y), f"Replacement Font: {font.path}", font=base_font, fill="black"
-        )
-        y += 50
-        glyphs_text = " ".join(
-            [glyph if len(glyph) == 1 else f"[{glyph}]" for glyph in glyphs]
-        )
+    for font, glyphs, font_path in replacement_fonts:
+        draw.text((x, y), f"Replacement Font: {Path(font_path).name}", font=base_font, fill="black")
+        y += line_height
+        valid_glyphs = []
+        for glyph in glyphs:
+            if font.getsize(glyph)[0] > 0:
+                valid_glyphs.append(glyph)
+            else:
+                valid_glyphs.append(f"[Missing: {glyph}]")
+        glyphs_text = " ".join(valid_glyphs)
         draw.text((x, y), glyphs_text, font=font, fill="black")
-        y += 100
+        y += line_height * 2
+
+        # Check if y exceeds image height and adjust if necessary
+        if y + line_height > image_height - 50:
+            image_height += 200
+            new_image = Image.new("RGBA", (image_width, image_height), color="white")
+            new_image.paste(image, (0, 0))
+            image = new_image
+            draw = ImageDraw.Draw(image)
 
     # Save image to a temporary file and display
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+    with contextlib.ExitStack() as stack:
+        tmp = stack.enter_context(tempfile.NamedTemporaryFile(suffix=".png", delete=False))
         image.save(tmp.name)
         image.show()
-        # Delete the temporary file after displaying
         os.unlink(tmp.name)
 
     print("Font preview image has been displayed.")

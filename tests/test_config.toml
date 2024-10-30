@@ -4,9 +4,9 @@ output_directory = "tests/fonts/output"
 output_name = "test_custom_font.ttf"
 
 [[replacements]]
-glyphs = ["!", "trademark"]
+glyphs = ["!", "™"]
 font = "tests/fonts/Apple Symbols.ttf"
 
 [[replacements]]
-glyphs = ["spade", "club"]
+glyphs = ["♠", "♣"]
 font = "tests/fonts/SymbolsNerdFont-Regular.ttf"
