@@ -9,6 +9,9 @@ from pathlib import Path
 import toml
 from PIL import Image, ImageDraw, ImageFont
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
 
 def load_config(config_path: str) -> dict:
     """Load and parse the config file"""
@@ -29,13 +32,16 @@ def get_font_name(font_path: str) -> str:
 def preview_config(config_path: str) -> None:
     """Display a preview of the font configuration"""
     config = load_config(config_path)
+    logging.info(f"Loaded configuration from {config_path}")
 
     # Load base font
     base_font_path = config["fonts"]["base"]
+    logging.info(f"Loading base font from {base_font_path}")
     try:
         base_font = ImageFont.truetype(base_font_path, size=40)
+        logging.info(f"Successfully loaded base font: {base_font_path}")
     except OSError:
-        print(f"Error loading base font from {base_font_path}")
+        logging.error(f"Error loading base font from {base_font_path}")
         sys.exit(1)
 
     # Prepare replacements
@@ -43,13 +49,13 @@ def preview_config(config_path: str) -> None:
     replacement_fonts = []
     for replacement in replacements:
         font_path = replacement["font"]
-        # If the font path is relative, make it absolute based on config file location
         config_dir = Path(config_path).parent
         font_path = str(config_dir / font_path)
+        logging.info(f"Loading replacement font from {font_path} for glyphs: {replacement['glyphs']}")
         try:
             font = ImageFont.truetype(font_path, size=40)
             replacement_fonts.append((font, replacement["glyphs"], font_path))
-            logging.info(f"Loaded replacement font from {font_path}")
+            logging.info(f"Successfully loaded replacement font: {font_path}")
         except OSError:
             logging.error(f"Error loading replacement font from {font_path}")
             sys.exit(1)
@@ -73,15 +79,24 @@ def preview_config(config_path: str) -> None:
 
     # Draw replacement fonts samples
     for font, glyphs, font_path in replacement_fonts:
-        draw.text((x, y), f"Replacement Font: {Path(font_path).name}", font=base_font, fill="black")
+        font_name = Path(font_path).name
+        draw.text((x, y), f"Replacement Font: {font_name}", font=base_font, fill="black")
         y += line_height
         valid_glyphs = []
         for glyph in glyphs:
-            bbox = font.getbbox(glyph)
-            if bbox is not None:
-                valid_glyphs.append(glyph)
-            else:
-                valid_glyphs.append(f"[Missing: {glyph}]")
+            try:
+                mask = font.getmask(glyph)
+                if mask.getbbox():
+                    valid_glyphs.append(glyph)
+                    logging.info(f"Glyph '{glyph}' found in {font_name}")
+                else:
+                    missing = f"[Missing: {glyph}]"
+                    valid_glyphs.append(missing)
+                    logging.warning(f"Glyph '{glyph}' MISSING in {font_name}")
+            except Exception as e:
+                missing = f"[Error: {glyph}]"
+                valid_glyphs.append(missing)
+                logging.error(f"Error checking glyph '{glyph}' in {font_name}: {e}")
         glyphs_text = " ".join(valid_glyphs)
         draw.text((x, y), glyphs_text, font=font, fill="black")
         y += line_height * 2
@@ -98,8 +113,10 @@ def preview_config(config_path: str) -> None:
     with contextlib.ExitStack() as stack:
         tmp = stack.enter_context(tempfile.NamedTemporaryFile(suffix=".png", delete=False))
         image.save(tmp.name)
+        logging.info(f"Saved preview image to temporary file: {tmp.name}")
         image.show()
         os.unlink(tmp.name)
+        logging.info("Displayed and deleted temporary preview image.")
 
     print("Font preview image has been displayed.")
 
