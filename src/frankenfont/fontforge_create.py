@@ -5,12 +5,35 @@ import os
 import fontforge
 
 
-def load_config(config_path):
+def load_config(config_path: str) -> dict:
+    """Load and parse a JSON configuration file.
+    
+    Args:
+        config_path: Path to the JSON config file
+        
+    Returns:
+        Dict containing the parsed configuration
+        
+    Raises:
+        json.JSONDecodeError: If config file is invalid JSON
+        OSError: If config file cannot be read
+    """
     with open(config_path) as f:
         return json.load(f)
 
 
-def merge_glyphs(base_font, symbol_font_path, glyphs):
+def merge_glyphs(base_font: "fontforge.font", symbol_font_path: str, glyphs: list[str]) -> None:
+    """Merge specified glyphs from symbol font into base font using FontForge.
+    
+    Args:
+        base_font: The target FontForge font object to merge glyphs into
+        symbol_font_path: Path to the font containing glyphs to copy
+        glyphs: List of glyphs to copy (can be symbols or glyph names)
+        
+    Note:
+        Handles both literal symbols and glyph names in the glyphs list.
+        Prints warnings for missing glyphs but continues processing.
+    """
     symbol_font = fontforge.open(symbol_font_path)
 
     for glyph in glyphs:
@@ -44,7 +67,20 @@ def merge_glyphs(base_font, symbol_font_path, glyphs):
     symbol_font.close()
 
 
-def create_custom_font(config_path):
+def create_custom_font(config_path: str) -> str:
+    """Create a custom font by merging glyphs from multiple fonts using FontForge.
+    
+    Args:
+        config_path: Path to the configuration file
+        
+    Returns:
+        Path to the generated font file
+        
+    Raises:
+        json.JSONDecodeError: If config file is invalid
+        OSError: If there are issues reading/writing files
+        KeyError: If required config keys are missing
+    """
     config = load_config(config_path)
     base_font_path = config["fonts"]["base"]
     output_dir = config["fonts"].get("output_directory", "output")
