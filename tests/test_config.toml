@@ -14,9 +14,3 @@ font = "tests/fonts/SymbolsNerdFont-Regular.ttf"
 [[replacements]]
 glyphs = ["A", "E", "I", "O", "U", "Y", "a", "e", "i", "o", "u", "y"]
 font = "tests/fonts/Brush Script.ttf"
-[fonts]
-base = "tests/fonts/base_font.ttf"
-
-[[replacements]]
-font = "tests/fonts/replacement_font.ttf"
-glyphs = ["A", "B", "C"]
