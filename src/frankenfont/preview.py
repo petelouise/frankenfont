@@ -2,6 +2,7 @@ import contextlib
 import json
 import logging
 import os
+import random
 import sys
 import tempfile
 from pathlib import Path
@@ -68,6 +69,7 @@ def preview_config(config_path: str) -> None:
 
     # Add base font to colors
     base_font_name = get_font_name(base_font_path)
+    default_color = "black"
     font_colors[base_font_name] = default_color
 
     for i, (font, glyphs, font_path) in enumerate(replacement_fonts):
@@ -76,8 +78,6 @@ def preview_config(config_path: str) -> None:
         font_colors[font_name] = assigned_color
         for glyph in glyphs:
             glyph_to_font_color[glyph] = (font, assigned_color)
-
-    default_color = "black"
 
     # Create an image with white background
     image_width = 1200
@@ -93,11 +93,15 @@ def preview_config(config_path: str) -> None:
 
     # Define sample text
     sample_text = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,!.-?"
-    replacement_glyphs = ''.join(replacement["glyphs"] for replacement in replacements)
-    all_glyphs = sample_text + replacement_glyphs
+    replacement_glyphs = "".join(
+        "".join(replacement["glyphs"]) for replacement in replacements
+    )
+    unique_glyphs = list(set(sample_text + replacement_glyphs))
+    random.shuffle(unique_glyphs)
+    shuffled_glyphs = "".join(unique_glyphs)
 
     # Draw base font sample with mixed glyphs
-    for character in all_glyphs:
+    for character in shuffled_glyphs:
         if character in glyph_to_font_color:
             font, color = glyph_to_font_color[character]
         else:
@@ -138,9 +142,7 @@ def preview_config(config_path: str) -> None:
 
     # Calculate total width of font names to align them to the right
     font_names_list = list(font_colors.keys())
-    font_names_text = " | ".join(font_names_list)
     total_width = 0
-    temp_draw = ImageDraw.Draw(image)
     for font_name in font_names_list:
         font_color = font_colors[font_name]
         bbox = small_font.getbbox(font_name)
@@ -150,7 +152,11 @@ def preview_config(config_path: str) -> None:
         total_width += width + separator_width
     if font_names_list:
         last_separator_bbox = small_font.getbbox(" | ")
-        last_separator_width = last_separator_bbox[2] - last_separator_bbox[0] if last_separator_bbox else 0
+        last_separator_width = (
+            last_separator_bbox[2] - last_separator_bbox[0]
+            if last_separator_bbox
+            else 0
+        )
         total_width -= last_separator_width  # Remove last separator
 
     x_font_names = image_width - margin - total_width
